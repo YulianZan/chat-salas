@@ -35,7 +35,9 @@ app.use("/auth", authRouter);
 
 const adapter = new BotFrameworkAdapter({
   appId: process.env.MicrosoftAppId || process.env.MICROSOFT_APP_ID || "",
-  appPassword: process.env.MicrosoftAppPassword || process.env.MICROSOFT_APP_PASSWORD || ""
+  appPassword: process.env.MicrosoftAppPassword || process.env.MICROSOFT_APP_PASSWORD || "",
+  // Single-tenant bot: autenticar contra el tenant propio, no botframework.com
+  channelAuthTenant: process.env.AZURE_TENANT_ID || "",
 });
 
 adapter.onTurnError = async (context, error) => {
