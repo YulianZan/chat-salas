@@ -20,8 +20,8 @@ import { sessionMiddleware, router as authRouter, requireAuth } from "./auth.js"
 const app = express();
 const port = Number(process.env.PORT || 3000);
 
-// Confiar en el proxy (Cloudflare → nginx → backend) para cookies secure
-app.set("trust proxy", 1);
+// Cloudflare → cloudflared → nginx → backend: confiar toda la cadena
+app.set("trust proxy", true);
 
 app.use(cors({
   origin: process.env.FRONTEND_URL || true,

@@ -24,6 +24,7 @@ export const sessionMiddleware = session({
   cookie: {
     secure: process.env.NODE_ENV === "production",
     httpOnly: true,
+    // "lax" permite que la cookie llegue tras el redirect OAuth
     sameSite: "lax",
     maxAge: 8 * 60 * 60 * 1000,
   },
