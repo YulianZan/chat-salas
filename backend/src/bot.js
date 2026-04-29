@@ -23,7 +23,7 @@ function resolveEmail(activity) {
   if (from?.email) return from.email;
   const slug = (from?.name || "usuario")
     .toLowerCase()
-    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, ".");
   return `${slug}@${DEFAULT_EMAIL_DOMAIN}`;
 }

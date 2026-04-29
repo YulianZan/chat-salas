@@ -1,0 +1,49 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.17/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.17",
+  "version": "1.0.0",
+  "id": "b068df6e-d27b-47d1-b665-5f238e233853",
+  "packageName": "cl.areatibdo.reservas-salas",
+  "developer": {
+    "name": "BDO Chile - Área Tecnología",
+    "websiteUrl": "https://reservas.areatibdo.cl",
+    "privacyUrl": "https://reservas.areatibdo.cl",
+    "termsOfUseUrl": "https://reservas.areatibdo.cl"
+  },
+  "name": {
+    "short": "Reservas Salas",
+    "full": "Bot de Reserva de Salas de Reuniones"
+  },
+  "description": {
+    "short": "Reserva salas de reuniones desde Teams",
+    "full": "Consulta disponibilidad y reserva salas de reuniones directamente desde Microsoft Teams. Comandos: salas, reservas hoy, nueva reserva, mis reservas, cancelar."
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "accentColor": "#0f172a",
+  "bots": [
+    {
+      "botId": "b068df6e-d27b-47d1-b665-5f238e233853",
+      "scopes": ["personal", "team", "groupchat"],
+      "supportsFiles": false,
+      "isNotificationOnly": false,
+      "commandLists": [
+        {
+          "scopes": ["personal", "team", "groupchat"],
+          "commands": [
+            { "title": "ayuda",          "description": "Muestra el menú principal" },
+            { "title": "salas",          "description": "Lista todas las salas disponibles" },
+            { "title": "reservas hoy",   "description": "Ver reservas del día de hoy" },
+            { "title": "mis reservas",   "description": "Ver mis próximas reservas" },
+            { "title": "nueva reserva",  "description": "Crear una nueva reserva de sala" },
+            { "title": "cancelar",       "description": "Cancelar una de tus reservas" }
+          ]
+        }
+      ]
+    }
+  ],
+  "permissions": ["identity", "messageTeamMembers"],
+  "validDomains": ["reservas.areatibdo.cl"]
+}
