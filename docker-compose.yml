@@ -1,0 +1,77 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: reservas-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: reservas_db
+      POSTGRES_USER: reservas_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - reservas_net
+
+  backend:
+    build:
+      context: ./backend
+    container_name: reservas-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://reservas_user:${POSTGRES_PASSWORD}@postgres:5432/reservas_db
+      PUBLIC_URL: ${PUBLIC_URL}
+      FRONTEND_URL: ${FRONTEND_URL}
+      MicrosoftAppId: ${MicrosoftAppId:-}
+      MicrosoftAppPassword: ${MicrosoftAppPassword:-}
+      DEFAULT_EMAIL_DOMAIN: ${DEFAULT_EMAIL_DOMAIN:-empresa.cl}
+    depends_on:
+      - postgres
+    networks:
+      - reservas_net
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: reservas-frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: ${PUBLIC_URL:-http://localhost:8080}/api
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - reservas_net
+
+  gateway:
+    image: nginx:1.27-alpine
+    container_name: reservas-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - reservas_net
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: reservas-cloudflared
+    restart: unless-stopped
+    command: tunnel run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - gateway
+    networks:
+      - reservas_net
+
+volumes:
+  postgres_data:
+
+networks:
+  reservas_net:
+    driver: bridge
