@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { CalendarDays, DoorOpen, Plus, Search, Users, Clock, Pencil, Trash2, Ban, CheckCircle2 } from "lucide-react";
+import { CalendarDays, DoorOpen, Plus, Search, Users, Clock, Pencil, Trash2, Ban, CheckCircle2, LogOut } from "lucide-react";
+import { useAuth } from "./src/AuthContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
@@ -64,7 +65,8 @@ function hasOverlap(aStart, aEnd, bStart, bEnd) {
   return new Date(aStart) < new Date(bEnd) && new Date(aEnd) > new Date(bStart);
 }
 
-export default function ReservasSalasMVP() {
+export default function ReservasSalasMVP({ user }) {
+  const { authBase } = useAuth();
   const [activeTab, setActiveTab] = useState("reservas");
   const [rooms, setRooms] = useState(initialRooms);
   const [reservations, setReservations] = useState(initialReservations);
@@ -78,8 +80,8 @@ export default function ReservasSalasMVP() {
   const [reservationForm, setReservationForm] = useState({
     roomId: "1",
     title: "",
-    requester: "",
-    email: "",
+    requester: user?.name || "",
+    email: user?.email || "",
     start: "2026-04-29T09:00",
     end: "2026-04-29T10:00",
   });
@@ -368,7 +370,17 @@ export default function ReservasSalasMVP() {
             <p className="text-sm font-medium text-slate-500">MVP interno</p>
             <h1 className="text-2xl font-bold">Reserva de salas de reuniones</h1>
           </div>
-          <div className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Panel secretaría</div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-slate-600">{user?.name || "Panel secretaría"}</span>
+            <a
+              href={`${authBase}/logout`}
+              className="flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              title="Cerrar sesión"
+            >
+              <LogOut size={15} />
+              Salir
+            </a>
+          </div>
         </div>
       </header>
 

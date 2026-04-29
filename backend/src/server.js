@@ -15,12 +15,23 @@ import {
   setRoomActive
 } from "./db.js";
 import { ReservationsBot } from "./bot.js";
+import { sessionMiddleware, router as authRouter, requireAuth } from "./auth.js";
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
 
-app.use(cors({ origin: process.env.FRONTEND_URL || true }));
+// Confiar en el proxy (Cloudflare → nginx → backend) para cookies secure
+app.set("trust proxy", 1);
+
+app.use(cors({
+  origin: process.env.FRONTEND_URL || true,
+  credentials: true,
+}));
 app.use(express.json());
+app.use(sessionMiddleware);
+
+// Rutas OAuth - no requieren autenticación
+app.use("/auth", authRouter);
 
 const adapter = new BotFrameworkAdapter({
   appId: process.env.MicrosoftAppId || process.env.MICROSOFT_APP_ID || "",
@@ -39,7 +50,8 @@ app.get("/health", async (_req, res) => {
   res.json({ ok: true, service: "reservas-backend" });
 });
 
-app.get("/api/rooms", async (_req, res, next) => {
+// API protegida con autenticación
+app.get("/api/rooms", requireAuth, async (_req, res, next) => {
   try {
     res.json(await listRooms());
   } catch (error) {
@@ -47,7 +59,7 @@ app.get("/api/rooms", async (_req, res, next) => {
   }
 });
 
-app.post("/api/rooms", async (req, res, next) => {
+app.post("/api/rooms", requireAuth, async (req, res, next) => {
   try {
     res.status(201).json(await createRoom(req.body));
   } catch (error) {
@@ -55,7 +67,7 @@ app.post("/api/rooms", async (req, res, next) => {
   }
 });
 
-app.patch("/api/rooms/:id", async (req, res, next) => {
+app.patch("/api/rooms/:id", requireAuth, async (req, res, next) => {
   try {
     res.json(await setRoomActive(req.params.id, req.body.active));
   } catch (error) {
@@ -63,7 +75,7 @@ app.patch("/api/rooms/:id", async (req, res, next) => {
   }
 });
 
-app.get("/api/reservations", async (req, res, next) => {
+app.get("/api/reservations", requireAuth, async (req, res, next) => {
   try {
     res.json(await listReservations(req.query.date));
   } catch (error) {
@@ -71,16 +83,17 @@ app.get("/api/reservations", async (req, res, next) => {
   }
 });
 
-app.post("/api/reservations", async (req, res, next) => {
+app.post("/api/reservations", requireAuth, async (req, res, next) => {
   try {
-    const reservation = await createReservation({ ...req.body, createdBy: req.body.createdBy || "Panel admin" });
+    const createdBy = req.session.user?.name || req.body.createdBy || "Panel admin";
+    const reservation = await createReservation({ ...req.body, createdBy });
     res.status(201).json(reservation);
   } catch (error) {
     next(error);
   }
 });
 
-app.get("/api/blocks", async (req, res, next) => {
+app.get("/api/blocks", requireAuth, async (req, res, next) => {
   try {
     res.json(await listBlocks(req.query.date));
   } catch (error) {
@@ -88,7 +101,7 @@ app.get("/api/blocks", async (req, res, next) => {
   }
 });
 
-app.post("/api/blocks", async (req, res, next) => {
+app.post("/api/blocks", requireAuth, async (req, res, next) => {
   try {
     res.status(201).json(await createBlock(req.body));
   } catch (error) {
@@ -96,7 +109,7 @@ app.post("/api/blocks", async (req, res, next) => {
   }
 });
 
-app.delete("/api/blocks/:id", async (req, res, next) => {
+app.delete("/api/blocks/:id", requireAuth, async (req, res, next) => {
   try {
     await deleteBlock(req.params.id);
     res.status(204).end();
@@ -105,6 +118,7 @@ app.delete("/api/blocks/:id", async (req, res, next) => {
   }
 });
 
+// Webhook Teams Bot - sin autenticación de sesión
 app.post("/api/messages", (req, res) => {
   adapter.processActivity(req, res, async (context) => {
     await bot.run(context);

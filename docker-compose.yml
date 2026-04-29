@@ -11,6 +11,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - reservas_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reservas_user -d reservas_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
@@ -18,30 +23,39 @@ services:
     container_name: reservas-backend
     restart: unless-stopped
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       PORT: 3000
       DATABASE_URL: postgresql://reservas_user:${POSTGRES_PASSWORD}@postgres:5432/reservas_db
       PUBLIC_URL: ${PUBLIC_URL}
       FRONTEND_URL: ${FRONTEND_URL}
+      # OAuth Office 365
+      AZURE_CLIENT_ID: ${AZURE_CLIENT_ID}
+      AZURE_CLIENT_SECRET: ${AZURE_CLIENT_SECRET}
+      AZURE_TENANT_ID: ${AZURE_TENANT_ID}
+      SESSION_SECRET: ${SESSION_SECRET}
+      # Teams Bot (opcional)
       MicrosoftAppId: ${MicrosoftAppId:-}
       MicrosoftAppPassword: ${MicrosoftAppPassword:-}
       DEFAULT_EMAIL_DOMAIN: ${DEFAULT_EMAIL_DOMAIN:-empresa.cl}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - reservas_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
 
   frontend:
     build:
       context: ./frontend
     container_name: reservas-frontend
     restart: unless-stopped
-    environment:
-      VITE_API_URL: ${PUBLIC_URL:-http://localhost:8080}/api
-    ports:
-      - "5173:5173"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - reservas_net
 
@@ -58,6 +72,11 @@ services:
       - backend
     networks:
       - reservas_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
 
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -65,7 +84,8 @@ services:
     restart: unless-stopped
     command: tunnel run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     depends_on:
-      - gateway
+      gateway:
+        condition: service_healthy
     networks:
       - reservas_net
 
