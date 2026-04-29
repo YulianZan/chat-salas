@@ -118,11 +118,18 @@ app.delete("/api/blocks/:id", requireAuth, async (req, res, next) => {
   }
 });
 
-// Webhook Teams Bot - sin autenticación de sesión
-app.post("/api/messages", (req, res) => {
-  adapter.processActivity(req, res, async (context) => {
-    await bot.run(context);
-  });
+// Webhook Teams Bot — sin autenticación de sesión
+app.post("/api/messages", async (req, res) => {
+  try {
+    await adapter.processActivity(req, res, async (context) => {
+      await bot.run(context);
+    });
+  } catch (err) {
+    // Un 401 del Bot Framework (clave de firma no disponible, credenciales
+    // incorrectas, etc.) no debe derribar el proceso entero.
+    console.error("Bot processActivity error:", err.message);
+    if (!res.headersSent) res.status(200).end();
+  }
 });
 
 app.use((error, _req, res, _next) => {

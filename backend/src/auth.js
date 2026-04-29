@@ -1,6 +1,10 @@
 import { ConfidentialClientApplication } from "@azure/msal-node";
 import session from "express-session";
+import connectPg from "connect-pg-simple";
 import { Router } from "express";
+import { pool } from "./db.js";
+
+const PgStore = connectPg(session);
 
 const clientId = process.env.AZURE_CLIENT_ID || process.env.MicrosoftAppId || "";
 const clientSecret = process.env.AZURE_CLIENT_SECRET || process.env.MicrosoftAppPassword || "";
@@ -18,13 +22,17 @@ const REDIRECT_URI = `${process.env.PUBLIC_URL}/auth/callback`;
 const SCOPES = ["openid", "profile", "email", "User.Read"];
 
 export const sessionMiddleware = session({
+  store: new PgStore({
+    pool,
+    tableName: "user_sessions",
+    createTableIfMissing: true,
+  }),
   secret: process.env.SESSION_SECRET || "dev-secret-cambia-en-produccion",
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === "production",
     httpOnly: true,
-    // "lax" permite que la cookie llegue tras el redirect OAuth
     sameSite: "lax",
     maxAge: 8 * 60 * 60 * 1000,
   },
