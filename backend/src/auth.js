@@ -80,6 +80,18 @@ router.get("/me", (req, res) => {
   res.json(req.session.user);
 });
 
+// Endpoint temporal de diagnóstico — remover después de verificar
+router.get("/debug", (req, res) => {
+  res.json({
+    secure: req.secure,
+    protocol: req.protocol,
+    xForwardedProto: req.headers["x-forwarded-proto"],
+    sessionID: req.sessionID,
+    sessionUser: req.session?.user ?? null,
+    cookieHeader: req.headers["cookie"] ?? null,
+  });
+});
+
 export function requireAuth(req, res, next) {
   if (!req.session?.user) return res.status(401).json({ error: "Autenticación requerida" });
   next();
