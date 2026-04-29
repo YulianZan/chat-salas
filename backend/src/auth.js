@@ -55,7 +55,12 @@ router.get("/callback", async (req, res) => {
       email: tokenResponse.account?.username ?? "",
       id: tokenResponse.account?.homeAccountId ?? "",
     };
-    res.redirect(frontendUrl);
+    // Forzar persistencia de sesión antes del redirect;
+    // sin esto el store puede no haber guardado cuando el browser vuelve
+    req.session.save((err) => {
+      if (err) console.error("Session save error", err);
+      res.redirect(frontendUrl);
+    });
   } catch (err) {
     console.error("auth/callback error", err);
     res.redirect(`${frontendUrl}?error=auth_failed`);
